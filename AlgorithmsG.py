@@ -6,6 +6,9 @@ from functools import lru_cache
 
 
 def polynomial_eval(polynomial, value):
+    evaluation = int()
+    for coefficient, power in enumerate(polynomial):
+        pow_calc = int(1)
         for _ in range(power):
             pow_calc *= value
         evaluation += coefficient * pow_calc
