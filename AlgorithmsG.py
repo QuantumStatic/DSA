@@ -41,7 +41,6 @@ def horner_recur(polynomial, value):
 
 
 def horner_alt(polynomial, value):
-
     evaluation = int()
     for coefficient, power in enumerate(polynomial):
         evaluation += coefficient * pow(value, power)
@@ -59,7 +58,6 @@ def fibCache(n):
     return fibCache(n - 1) + fibCache(n - 2)
 
 def find_max_sub_array_recur(arrey):
-
     # this is found by running brute force against the recursive implementation. Depends on hardware specifications.
     recur_better_than_brute_point = 8
 
