@@ -345,6 +345,28 @@ class RedBlackTree(BinarySearchTree):
         return toDelete
 
     def deletionFixup(self, discrepantLeaf):
+        # They are 4 cases for deletion fixup
+        # Since inserted node is red, we always look at the sibling of the inserted node 
+        # Case 1: If sibling is red then make sibling black and make inserted leaf's parent red
+        #         rotate the sibling such that the parent rotates towards the inserted node. 
+        #         (ie. if inserted was a left child then the parent is left rotated)
+        #         this changes inserted node's sibling. 
+        # Case 2: Inserted Node's sibling's kids are both black 
+        #         (irrespective sibling's colour, it might seem confusing but for now don't think about what we just did in Case 1)
+        #         make sibling's colour red & colour inserted node's colour of the same colour as its parent. 
+        # Case 3: Inserted Node's sibling's far child is black
+        #         (if Inserted node is a left child, then the far child would its sibling's right child)
+        #         since either this case (& case 4) or case 2 would be performed we can assume atleast one of inserted node's 
+        #         sibling's kid is red. Purpose of this case is just to make inserted node's sibling's far child red.
+        #         Colour inserted node's sibling's non far child black & the inserted node's sibling red.
+        #         Perform a rotation away from the inserted node on inserted node's sibling. Now inserted node's sibling's far child is red.
+        # Case 4: Inserted Node's sibling's far child is red 
+        #         (if inserted Node's sibling's far child is red then we jump directly to case 4)
+        #         Colour inserted node's sibling's colour as same its parent
+        #         Colour inserted node's sibling's far child & inserted node's parent black 
+        #         perform a rotation on inserted node's parent towards inserted node.
+        #         (if inserted node is a right child then perform a right rotate)
+        
         while discrepantLeaf is not self.root and discrepantLeaf.colour is black:
             if discrepantLeaf.parent.left is discrepantLeaf:
                 sibling_discrepantLeaf = discrepantLeaf.parent.right
