@@ -3,6 +3,220 @@ from statistics import mean
 from random import shuffle
 from copy import deepcopy
 
+
+# For Heaps
+maxHeap, minHeap = True, False
+
+class Heap:
+    __slots__ = ["keys", "k", "heapType"]
+    def __init__(self, *values, heapType=None, kValue=2):
+        self.heapType, self.k, self.keys = heapType, kValue, list()
+        self.addElements(values)
+
+    def __str__(self):
+        return str(self.keys)
+
+    def addElements(self, *values):
+        for value in Heap.breaker(values):
+            self.keys.append(value)
+        self.buildHeap()
+
+    @staticmethod
+    def breaker(toBreak):
+        for value in toBreak:
+            if isinstance(value, int) or isinstance(value, float):
+                yield value
+            elif isinstance(value, set) or isinstance(value, list) or isinstance(value, tuple):
+                yield from Heap.breaker(value)
+            else:
+                raise TypeError(f"{value} of type {type(value).__name__} is not supported.")
+
+    def kids(self, index):
+        for n in range(1,self.k+1):
+            yield (self.k*index+n)
+
+    def Heapify(self, index):
+        if self.heapType is maxHeap:
+            largest = index
+            for kid in self.kids(index):
+                if kid >= len(self.keys):
+                    break
+                if self.keys[kid] > self.keys[largest]:
+                    largest = kid
+            if largest != index:
+                self.keys[largest], self.keys[index] = self.keys[index], self.keys[largest]
+                self.Heapify(largest)
+        elif self.heapType is minHeap:
+            smallest = index
+            for kid in self.kids(index):
+                if kid >= len(self.keys):
+                    break
+                if self.keys[kid] < self.keys[smallest]:
+                    smallest = kid
+            if smallest != index:
+                self.keys[smallest], self.keys[index] = self.keys[index], self.keys[smallest]
+                self.Heapify(smallest)
+
+    def buildHeap(self):
+        if self.heapType is not None:
+            for index in range(len(self.keys)//self.k, -1,-1):
+                self.Heapify(index)
+
+    def extract(self):
+        if len(self.keys) == 0:
+            return None
+        temp = self.keys[0]
+        del self.keys[0]
+        self.Heapify(0)
+        return (temp)
+
+    def changeHeapType(self):
+        if self.heapType is not None:
+            self.heapType = not self.heapType
+        else: 
+            raise Exception("Can't change Heap when no heap type is assingned. Try using setHeapType function instead")
+
+    def setHeapType(self,HeapType):
+        if isinstance(HeapType, bool):
+            self.heapType = HeapType
+        else:
+            raise TypeError(f"Entered type {type(HeapType)} is not supported. try writing maxHeap or minHeap")
+
+    def sort(self):
+        sortedkeys = list()
+        if self.heapType is minHeap:
+            while (temp := self.extract()) is not None:
+                sortedkeys.append(temp)
+        elif self.heapType is maxHeap:
+            while (temp := self.extract()) is not None:
+                sortedkeys.insert(0, temp)
+        else:
+            raise TypeError("can't sort a heap when its type is not specified, try using list sort method instead")
+        self.keys = sortedkeys
+        del sortedkeys
+
+# Declare a Heap as:
+#   foo = Heap(list, heapType=MaxHeap) or foo = Heap(tuple, heapType=MinHeap, kValue=3) or foo = Heap(int, int, float, int, float...,heapType=MinHeap, kValue=67)
+
+class PriorityQueue:
+
+    class item:
+        __slots__ = ["priority", "task", 'id']
+        def __init__(self, priority:int, task, idnum=None):
+            self.priority, self.task, self.id = priority, task, idnum
+        
+        def __str__(self):
+            return str({"Task":self.task, "Priority":self.priority, "ID":self.id})
+
+        def __call__(self):
+            return self
+
+        def copy(self):
+            return deepcopy(self)
+
+    __slots__ = ['items', 'currTask', 'totalItems']
+    def __init__(self, *args, priorityList=None, taskList=None):
+        self.items, self.currTask, self.totalItems = list(), None, int()
+        if priorityList is not None and taskList is not None:
+            data = zip(priorityList, taskList)
+            self.addItems(data)
+        if any(args):
+            self.addItems(args)
+
+    def __str__(self):
+        copyInstance, final = self.copy(), str()
+        while any(copyInstance.items):
+            final += str(copyInstance.getMostImportanTask().task) + '\n'
+            copyInstance.markDone()
+            # for x in copyInstance.items:
+                # print(x)
+        return final
+
+    def addItems(self, Items):
+        if isinstance(Items, dict):
+            for x in Items.keys():
+                self.items.append(self.item(priority=x, task=Items[x], idnum=self.totalItems))
+                self.totalItems += 1
+        elif isinstance(Items, self.item):
+            self.items.append(Items)
+            self.totalItems += 1
+        elif (isinstance(Items, tuple) or isinstance(Items, list)) and len(Items) == 2:
+            self.items.append(self.item(priority=Items[0], task=Items[1], idnum=self.totalItems))
+            self.totalItems += 1
+        elif isinstance(Items, list) or isinstance(Items, tuple) or isinstance(Items, set):
+            for item in Items:
+                self.addItems(item)
+        else:
+            raise TypeError(f"item {Items} of type {type(Items).__name__} is not supported")
+        self.buildQueue()
+
+    def createItem(self, priority:int, task):
+        self.addItems(self.item(priority, task))
+
+    def kids(self, index):
+        for n in range(1,2+1):
+            yield(2*index+n)
+
+    def minHeapify(self, index):
+        smallest = index
+        for kid in self.kids(index):
+            if kid >= self.totalItems:
+                break
+            if self.items[kid].priority < self.items[smallest].priority:
+                smallest = kid
+        if smallest != index:
+            self.items[smallest].id, self.items[index].id = self.items[index].id, self.items[smallest].id
+            self.items[smallest], self.items[index] = self.items[index], self.items[smallest]
+            self.minHeapify(smallest) 
+
+    def buildQueue(self):
+        for index in range(self.totalItems//2, -1,-1):
+            self.minHeapify(index)
+
+    def getTaskbyPriority(self, priority:int):
+        for x in self.items:
+            if x.priority == priority:
+                self.currTask = x
+                return x()
+
+    def getTaskbyId(self, Idnum:int):
+        self.currTask = self.items[Idnum]
+        return self.items[Idnum]()
+
+    def getMostImportanTask(self):
+        self.currTask = self.items[0]
+        return self.items[0]()
+
+    def markDone(self, toMarkDone=None):
+        if toMarkDone is not None and toMarkDone != self.currTask.id and isinstance(toMarkDone, int) and toMarkDone <= self.totalItems:
+            for x in range(toMarkDone+1, self.totalItems):
+                self.items[x].id -= 1
+            del self.items[toMarkDone]
+        elif isinstance(toMarkDone, self.item):
+            for x in range(toMarkDone.id+1, self.totalItems):
+                self.items[x].id -= 1
+            del self.items[toMarkDone.id]
+        elif toMarkDone is None:
+            if self.currTask is None:
+                self.currTask = self.getMostImportanTask()
+            for x in range(self.currTask.id+1, self.totalItems):
+                self.items[x].id -= 1
+            del self.items[self.currTask.id]
+        else:
+            raise TypeError(f"passed argument {toMarkDone} of type {type(toMarkDone).__name__} is not supported")
+        self.totalItems -= 1
+        self.buildQueue()
+
+    def copy(self):
+        return deepcopy(self)
+
+# Declare a PriorityQueue as:
+#   1 IS CONSIDERED HIGHEST PRIORITY (1>2>3>4...)
+#   foo = PriorityQueue(dict1, dict2, dict3...) where the dictionary is of the format {priority(must be a number):task}
+#   foo = PriorityQueue(priorityList=[], taskList=[]) where priorityList is a list(or tuple) priorities(numbers) & where taskList is a list(or tuple) of <any datatype>
+
+
+
 # For RedBlack Trees
 red, black = False, True 
 
@@ -206,6 +420,8 @@ class BinarySearchTree:
             replacement.right, replacement.left = toDelete.right, toDelete.left
             return self.transplant(toDelete, replacement)
 
+# Declare a BinarySearchTree as:
+#   foo =  BinarySearchTree(int1, int2, int3...) or foo = BinarySearchTree(list) or BinarySearchTree(list1, list2, list3...) also works for tuples & sets
 
 class RedBlackTree(BinarySearchTree):
 
@@ -403,3 +619,4 @@ class RedBlackTree(BinarySearchTree):
                     break
         discrepantLeaf.colour = black
 
+#since RedBlackTree directly inherits from BinarySearchTree it should be declared just like a binarySearchTree
