@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Iterable
-from myFunctions import nearMatching, execute_this
+# from myFunctions import nearMatching, execute_this
 from statistics import mean
 from copy import deepcopy
 import random
@@ -23,17 +23,17 @@ class Heap:
         return str(self.keys)
 
     def addElements(self, *values):
-        for value in Heap.breaker(values):
+        for value in Heap._breaker(values):
             self.keys.append(value)
         self.buildHeap()
 
     @staticmethod
-    def breaker(toBreak):
+    def _breaker(toBreak):
         for value in toBreak:
             if isinstance(value, int) or isinstance(value, float):
                 yield value
             elif isinstance(value, set) or isinstance(value, list) or isinstance(value, tuple):
-                yield from Heap.breaker(value)
+                yield from Heap._breaker(value)
             else:
                 raise TypeError(
                     f"{value} of type {type(value).__name__} is not supported.")
@@ -263,7 +263,7 @@ class Node:
 
     @staticmethod
     def is_sentinel(node):
-        return node == eval(type(node).__name__).sentinel
+        return node is None or node == eval(str(type(node)).split('.')[-2]).sentinel
 
 
 class BinarySearchTree:
@@ -275,10 +275,10 @@ class BinarySearchTree:
         def __str__(self):
             return str({'value': self.value, 'parent': self.parent.value if self.parent is not None else None, 'right': self.right.value if self.right is not None else None, 'left': self.left.value if self.left is not None else None, 'repititions': self.repititions})
 
-    sentinel = None
+    sentinel = leaf()
 
     def __init__(self, *args):
-        elements = BinarySearchTree.breaker(args)
+        elements = BinarySearchTree._breaker(args)
         index = nearMatching(elements, mean(elements))
         self.root = self.leaf(
             value=elements[index], parent=BinarySearchTree.sentinel)
@@ -303,19 +303,19 @@ class BinarySearchTree:
         return NotImplemented
 
     @staticmethod
-    def breaker(toBreak):
+    def _breaker(toBreak):
         final = list()
         for x in toBreak:
             if isinstance(x, int) or isinstance(x, float):
                 final.append(x)
             elif isinstance(x, list) or isinstance(x, tuple) or isinstance(x, set):
-                final.extend(BinarySearchTree.breaker(x))
+                final.extend(BinarySearchTree._breaker(x))
             else:
                 raise TypeError(f"{x} of type {type(x)} isn't supported yet")
         return final
 
     def insert(self, *toAdd):
-        newElements = eval(type(self).__name__).breaker(toAdd)
+        newElements = eval(type(self).__name__)._breaker(toAdd)
         for num in newElements:
             iterator = self.root
             while True:
@@ -323,13 +323,13 @@ class BinarySearchTree:
                     iterator.repititions += 1
                     break
                 elif num > iterator.value:
-                    if iterator.right is not Node.is_sentinel(node):
+                    if not self.leaf.is_sentinel(iterator.right):
                         iterator = iterator.right
                     else:
                         iterator.right = self.leaf(parent=iterator, value=num)
                         break
                 else:
-                    if iterator.left is not Node.is_sentinel(node):
+                    if not self.leaf.is_sentinel(iterator.left):
                         iterator = iterator.left
                     else:
                         iterator.left = self.leaf(parent=iterator, value=num)
@@ -518,14 +518,14 @@ class RedBlackTree(BinarySearchTree):
                     rightChild=None, leftChild=None)
 
     def __init__(self, *args):
-        elements = RedBlackTree.breaker(args)
+        elements = RedBlackTree._breaker(args)
         self.root = self.leaf(value=elements[0], parent=RedBlackTree.sentinel,
                               rightChild=RedBlackTree.sentinel, leftChild=RedBlackTree.sentinel, colour=BLACK)
         del elements[0]
         self.insert(elements)
 
     def insert(self, *toAdd):
-        newElements = RedBlackTree.breaker(toAdd)
+        newElements = RedBlackTree._breaker(toAdd)
         for num in newElements:
             iterator = self.root
             while True:
@@ -683,7 +683,7 @@ class SplayTree(BinarySearchTree):
     sentinel = leaf()
 
     def __init__(self, *args):
-        elements = SplayTree.breaker(args)
+        elements = SplayTree._breaker(args)
         rootVal = nearMatching(elements, mean(elements))
         self.root = self.leaf(value=elements[rootVal], parent=SplayTree.sentinel,
                               rightChild=SplayTree.sentinel, leftChild=SplayTree.sentinel)
@@ -784,7 +784,7 @@ class SplayTree(BinarySearchTree):
             return itr.value
 
     def insert(self, *toAdd):
-        newElements = SplayTree.breaker(toAdd)
+        newElements = SplayTree._breaker(toAdd)
         for newElement in newElements:
             print(self.root)
             rightHeight, leftHeight, toSplay = SplayTree.height(
@@ -933,7 +933,7 @@ class Treap(BinarySearchTree):
             raise TypeError(
                 f"Data type of parameters should be same. Received {type(value).__name__} and {type(priority).__name__}")
         if isinstance(value, list) or isinstance(value, tuple) or isinstance(value, set):
-            return zip(Treap.breaker(value), Treap.breaker(priority))
+            return zip(Treap._breaker(value), Treap._breaker(priority))
         elif isinstance(priority, int):
             return tuple(value, priority)
         else:
@@ -949,3 +949,141 @@ class Singleton(type):
             cls._instances[cls] = super(
                 Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
+
+class Btree:
+    class Node:
+        __slots__ = ['parent', 'children', 'keys', 'leaf']
+
+        def __init__(self, parent:Btree.Node=None, children:list[Btree.Node]=None, keys:list[int]=None, leaf:bool=False):
+            self.parent = parent
+            self.children:list[Btree.Node] = children if children is not None else []
+            self.keys:list[int] = keys if keys is not None else []
+            self.leaf = leaf
+
+        def __eq__(self, other):
+            if isinstance(other, Btree.Node):
+                return self.keys == other.keys
+            else:
+                return False
+
+        def __str__(self):
+            return f"values: {self.keys}"
+
+        def __iter__(self):
+            return iter(self.keys)
+
+        def __len__(self):
+            return len(self.keys)
+
+        def __getitem__(self, index):
+            return self.keys[index]
+
+        def __setitem__(self, index, value):
+            self.keys[index] = value
+
+        def __delitem__(self, index):
+            del self.keys[index]
+
+        def __contains__(self, key):
+            return key in self.keys
+
+        def __reversed__(self):
+            return reversed(self.keys)
+
+        def __add__(self, other):
+            return self.keys + other.keys
+
+        def __radd__(self, other):
+            return other.keys + self.keys
+
+        def __iadd__(self, other):
+            self.keys += other.keys
+            return self
+
+        def __mul__(self, other):
+            return self.keys * other
+
+        def __rmul__(self, other):
+            return other * self.keys
+
+        def __imul__(self, other):
+            self.keys *= other
+            return self
+
+        def __lt__(self, other):
+            return self.keys < other.values
+
+        def __le__(self, other):
+            return self.keys <= other.values
+
+        def __gt__(self, other):
+            return self.keys > other.values
+
+        def __ge__(self, other):
+            return self.keys >= other.values
+
+        def __ne__(self, other):
+            return self.keys != other.keys
+
+        def __bool__(self):
+            return bool(self.keys)
+
+        def __hash__(self):
+            return hash(self.keys)
+
+        def __repr__(self):
+            return f"{self.__class__.__name__}(parent={self.parent}, children={self.children}, values={self.keys})"
+
+        def __copy__(self):
+            return self.__class__(parent=self.parent, children=self.children, keys=self.keys)
+        
+    def __init__(self, order:int=2, root:Btree.Node=None):
+        self.order = order
+        self.root = root if root is not None else Btree.Node()
+        self.MINIMUM_KIDS = self.order - 1
+        self.MAXIMUM_KIDS = 2 * self.order - 1
+
+    def search_key(self, key_to_find:int):
+        curr_node = self.root
+        while True:
+            if key_to_find in curr_node:
+                return curr_node
+            else:
+                for index, key in enumerate(curr_node):
+                    if key_to_find < key:
+                        curr_node = curr_node.children[index]
+                        break
+                else:
+                    curr_node = curr_node.children[-1]
+
+    
+
+    def add_key(self, key:int):
+        pass
+
+    def _split_node(self, node:Btree.Node, child_idx:int):
+        new_node = Btree.Node(parent=node, 
+                            children=node.keys[child_idx].children[self.order:],
+                            keys=node.keys[child_idx].keys[self.order:],
+                            leaf=node.keys[child_idx].leaf)
+        
+        node.keys[child_idx].children = node.keys[child_idx].children[:self.order]
+        node.children.insert(child_idx+1, new_node)
+        node.keys.insert(child_idx, node.keys[child_idx].keys[self.order-1])
+
+    def _insert_non_full(self, node:Btree.Node, key_to_insert:int):
+        if node.leaf:
+            node.keys.append(key_to_insert)
+            node.keys.sort()
+        else:
+            for index, key in enumerate(node):
+                if key > key_to_insert:
+                    if len(node.children[index-1]) == self.MAXIMUM_KIDS:
+                        self._split_node(node, index-1)
+                        if key_to_insert > node.keys[index]:
+                            index += 1
+                    self._insert_non_full(node.children[index-1], key_to_insert)
+                    break
+            else:
+                self._insert_non_full(node.children[-1], key)
